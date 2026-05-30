@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>LandingPad</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- INTAKE SCREEN -->
+  <div id="intake-screen" class="screen">
+    <div class="intake-box">
+      <h1>🌍 LandingPad</h1>
+      <p class="tagline">Your personal guide to starting over somewhere new.</p>
+
+      <div class="form-group">
+        <label>Where are you from?</label>
+        <input type="text" id="country" placeholder="e.g. Mexico, Syria, Ethiopia..." />
+      </div>
+
+      <div class="form-group">
+        <label>Where are you now?</label>
+        <input type="text" id="location" placeholder="e.g. Eugene, Oregon, USA..." />
+      </div>
+
+      <div class="form-group">
+        <label>What do you need help with most?</label>
+        <select id="need">
+          <option value="">Select one...</option>
+          <option value="housing">Finding housing</option>
+          <option value="healthcare">Healthcare</option>
+          <option value="school">School enrollment</option>
+          <option value="work">Finding work</option>
+          <option value="legal">Legal / immigration status</option>
+          <option value="general">General guidance</option>
+        </select>
+      </div>
+
+      <button id="start-btn">Get Started →</button>
+    </div>
+  </div>
+
+  <!-- CHAT SCREEN -->
+  <div id="chat-screen" class="screen hidden">
+    <div class="chat-header">
+      <h2>🌍 LandingPad</h2>
+      <span id="user-context-label"></span>
+    </div>
+
+    <div id="chat-messages"></div>
+
+    <div class="chat-input-area">
+      <input type="text" id="user-input" placeholder="Type in any language..." />
+      <button id="send-btn">Send</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
