@@ -13,17 +13,14 @@
     <div class="intake-box">
       <h1>🌍 LandingPad</h1>
       <p class="tagline">Your personal guide to starting over somewhere new.</p>
-
       <div class="form-group">
         <label>Where are you from?</label>
         <input type="text" id="country" placeholder="e.g. Mexico, Syria, Ethiopia..." />
       </div>
-
       <div class="form-group">
         <label>Where are you now?</label>
         <input type="text" id="location" placeholder="e.g. Eugene, Oregon, USA..." />
       </div>
-
       <div class="form-group">
         <label>What do you need help with most?</label>
         <select id="need">
@@ -36,24 +33,106 @@
           <option value="general">General guidance</option>
         </select>
       </div>
-
       <button id="start-btn">Get Started →</button>
     </div>
   </div>
 
-  <!-- CHAT SCREEN -->
-  <div id="chat-screen" class="screen hidden">
-    <div class="chat-header">
-      <h2>🌍 LandingPad</h2>
-      <span id="user-context-label"></span>
+  <!-- MAIN APP SCREEN -->
+  <div id="app-screen" class="screen hidden">
+
+    <!-- LANGUAGE OVERLAY -->
+    <div id="lang-overlay" class="lang-overlay hidden">
+      <div class="lang-dropdown">
+        <div class="lang-title">Your languages</div>
+        <div id="saved-languages" class="lang-list"></div>
+        <div class="lang-add">
+          <input type="text" id="new-lang-input" placeholder="Add a language (e.g. French)" />
+          <button id="add-lang-btn">Add</button>
+        </div>
+        <button id="close-lang-btn" class="lang-close">Done</button>
+      </div>
     </div>
 
-    <div id="chat-messages"></div>
-
-    <div class="chat-input-area">
-      <input type="text" id="user-input" placeholder="Type in any language..." />
-      <button id="send-btn">Send</button>
+    <!-- HEADER -->
+    <div class="header">
+      <div class="header-left">
+        <span class="logo">🌍 LandingPad</span>
+        <span id="session-label" class="session-label"></span>
+      </div>
+      <div class="header-right">
+        <button id="lang-btn" class="btn-secondary">🌐 EN ▾</button>
+        <button id="new-session-btn" class="btn-secondary">+ New</button>
+        <button id="settings-btn" class="btn-secondary">⚙</button>
+      </div>
     </div>
+
+    <!-- MAIN 3-COLUMN LAYOUT -->
+    <div class="main-layout">
+
+      <!-- COL 1: SIDEBAR -->
+      <div class="sidebar">
+        <div class="sidebar-search">
+          <input type="text" placeholder="Search places..." id="sidebar-search" />
+        </div>
+        <div class="sidebar-section-label">PINNED</div>
+        <div id="pinned-list" class="place-list"></div>
+        <div class="sidebar-section-label">AI RECOMMENDED</div>
+        <div id="recommended-list" class="place-list"></div>
+        <div class="sidebar-section-label">RECENTS</div>
+        <div id="recents-list" class="place-list"></div>
+      </div>
+
+      <!-- COL 2: MAP -->
+      <div class="map-col">
+        <div class="filter-pills">
+          <span class="pill active" data-filter="all">All</span>
+          <span class="pill" data-filter="healthcare">🏥 Healthcare</span>
+          <span class="pill" data-filter="housing">🏠 Housing</span>
+          <span class="pill" data-filter="food">🍎 Food</span>
+          <span class="pill" data-filter="work">💼 Work</span>
+          <span class="pill" data-filter="legal">⚖️ Legal</span>
+          <span class="pill" data-filter="school">🏫 School</span>
+        </div>
+        <div id="map"></div>
+      </div>
+
+      <!-- COL 3: AI CHAT -->
+      <div class="chat-col">
+        <div class="chat-header">AI Guide</div>
+        <div id="chat-messages" class="chat-messages"></div>
+        <div class="quick-actions">
+          <span class="quick-btn" data-msg="How do I find a doctor near me?">Find a doctor</span>
+          <span class="quick-btn" data-msg="How do I enroll my kids in school?">Enroll kids</span>
+          <span class="quick-btn" data-msg="I need legal help with my immigration status">Legal help</span>
+          <span class="quick-btn" data-msg="Where can I find food assistance near me?">Food help</span>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="user-input" placeholder="Type in any language..." />
+          <button id="mic-btn" title="Voice input">🎤</button>
+          <button id="send-btn">Send</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM BAR -->
+    <div class="bottom-bar">
+      <!-- PLANNER -->
+      <div class="bottom-planner">
+        <div class="bottom-label">📅 Planner</div>
+        <div id="planner-events" class="planner-events"></div>
+        <button id="add-event-btn" class="btn-secondary" style="font-size:12px; margin-top:6px;">+ Add appointment</button>
+      </div>
+      <!-- EMAIL COMPOSER -->
+      <div class="bottom-email">
+        <div class="bottom-label">✉️ Write email in your language</div>
+        <div class="email-input-row">
+          <input type="text" id="email-prompt" placeholder='e.g. "Email my landlord about repairs in Spanish"' />
+          <button id="draft-email-btn">Draft →</button>
+        </div>
+        <div id="email-draft" class="email-draft hidden"></div>
+      </div>
+    </div>
+
   </div>
 
   <script src="app.js"></script>

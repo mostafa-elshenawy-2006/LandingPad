@@ -53,4 +53,7 @@ app.post('/chat', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+app.get('/config', (req, res) => {
+  res.json({ mapsApiKey: process.env.MAPS_API_KEY });
+});
 app.listen(PORT, () => console.log(`LandingPad running on port ${PORT}`));

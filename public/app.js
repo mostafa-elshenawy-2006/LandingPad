@@ -1,82 +1,322 @@
 let userContext = {};
 let chatHistory = [];
+let map, markers = [];
+let activeFilter = 'all';
+let savedLanguages = ['English'];
+let activeLanguage = 'English';
+let plannerEvents = [];
+let map_api_key = '';
 
-// INTAKE SCREEN
+const RESOURCE_TYPES = {
+  healthcare: { emoji: '🏥', color: '#1a73e8', query: 'clinic hospital medical center' },
+  housing: { emoji: '🏠', color: '#7b1fa2', query: 'housing assistance shelter' },
+  food: { emoji: '🍎', color: '#2e7d32', query: 'food bank food pantry' },
+  work: { emoji: '💼', color: '#f57f17', query: 'employment center job center' },
+  legal: { emoji: '⚖️', color: '#c62828', query: 'legal aid immigration lawyer' },
+  school: { emoji: '🏫', color: '#00838f', query: 'public school enrollment' }
+};
+
+// INIT
+async function init() {
+  const res = await fetch('/config');
+  const config = await res.json();
+  map_api_key = config.mapsApiKey;
+  loadGoogleMaps();
+}
+
+function loadGoogleMaps() {
+  const script = document.createElement('script');
+  script.src = `https://maps.googleapis.com/maps/api/js?key=${map_api_key}&libraries=places&callback=initMap`;
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+window.initMap = function () {
+  map = new google.maps.Map(document.getElementById('map'), {
+    center: { lat: 44.0521, lng: -123.0868 },
+    zoom: 13,
+    styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
+  });
+};
+
+// INTAKE
 document.getElementById('start-btn').addEventListener('click', () => {
   const country = document.getElementById('country').value.trim();
   const location = document.getElementById('location').value.trim();
   const need = document.getElementById('need').value;
 
-  if (!country || !location || !need) {
-    alert('Please fill out all three fields!');
-    return;
-  }
+  if (!country || !location || !need) { alert('Please fill out all fields!'); return; }
 
   userContext = { country, location, need };
-
-  // Show context in chat header
-  document.getElementById('user-context-label').textContent =
-    `From ${country} · ${location} · Needs help with: ${need}`;
-
-  // Switch screens
+  document.getElementById('session-label').textContent = `${country} → ${location}`;
   document.getElementById('intake-screen').classList.add('hidden');
-  document.getElementById('chat-screen').classList.remove('hidden');
+  document.getElementById('app-screen').classList.remove('hidden');
 
-  // Send welcome message
-  addMessage('bot', `👋 Welcome to LandingPad! I'm here to help you navigate life in ${location}. You can type in any language and I'll respond in the same language. What's your first question?`);
+  init();
+  geocodeLocation(location);
+  addMessage('bot', `👋 Welcome to LandingPad! I'm here to help you navigate life in ${location}. You can type in any language. What's your first question?`);
+  loadRecommendedPlaces(location, need);
 });
 
-// SEND MESSAGE
+// GEOCODE & CENTER MAP
+function geocodeLocation(location) {
+  if (!map_api_key) return;
+  fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${map_api_key}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.results[0]) {
+        const coords = data.results[0].geometry.location;
+        map.setCenter(coords);
+        map.setZoom(13);
+        searchNearbyResources(coords, activeFilter);
+      }
+    });
+}
+
+// SEARCH NEARBY RESOURCES
+function searchNearbyResources(coords, filter) {
+  markers.forEach(m => m.setMap(null));
+  markers = [];
+
+  const types = filter === 'all' ? Object.keys(RESOURCE_TYPES) : [filter];
+
+  types.forEach(type => {
+    const service = new google.maps.places.PlacesService(map);
+    service.nearbySearch({
+      location: coords,
+      radius: 5000,
+      keyword: RESOURCE_TYPES[type].query
+    }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK) {
+        results.slice(0, 3).forEach(place => addMarker(place, type));
+        if (filter === activeFilter) updateSidebar(results.slice(0, 3), type);
+      }
+    });
+  });
+}
+
+function addMarker(place, type) {
+  const marker = new google.maps.Marker({
+    map,
+    position: place.geometry.location,
+    title: place.name,
+    icon: {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><circle cx="16" cy="16" r="14" fill="${RESOURCE_TYPES[type].color}" stroke="white" stroke-width="2"/><text x="16" y="21" text-anchor="middle" font-size="14">${RESOURCE_TYPES[type].emoji}</text></svg>`)}`,
+      scaledSize: new google.maps.Size(32, 32)
+    }
+  });
+
+  const infoWindow = new google.maps.InfoWindow({
+    content: `<div style="font-family:sans-serif;padding:4px;max-width:200px;">
+      <strong>${place.name}</strong><br/>
+      <small>${place.vicinity || ''}</small><br/>
+      ${place.rating ? `⭐ ${place.rating}` : ''}
+    </div>`
+  });
+
+  marker.addListener('click', () => infoWindow.open(map, marker));
+  markers.push(marker);
+}
+
+// SIDEBAR
+function updateSidebar(places, type) {
+  const list = document.getElementById('recommended-list');
+  places.forEach(place => {
+    const item = document.createElement('div');
+    item.className = 'place-item';
+    item.innerHTML = `
+      <div class="place-icon" style="background:${RESOURCE_TYPES[type].color}22;">${RESOURCE_TYPES[type].emoji}</div>
+      <div>
+        <div class="place-name">${place.name}</div>
+        <div class="place-dist">${place.vicinity ? place.vicinity.split(',')[0] : ''}</div>
+      </div>`;
+    item.addEventListener('click', () => {
+      map.setCenter(place.geometry.location);
+      map.setZoom(16);
+    });
+    list.appendChild(item);
+  });
+}
+
+// FILTER PILLS
+document.querySelectorAll('.pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeFilter = pill.dataset.filter;
+    document.getElementById('recommended-list').innerHTML = '';
+    if (map) {
+      const center = map.getCenter();
+      searchNearbyResources({ lat: center.lat(), lng: center.lng() }, activeFilter);
+    }
+  });
+});
+
+// LOAD AI RECOMMENDED PLACES FOR SIDEBAR
+function loadRecommendedPlaces(location, need) {
+  const type = need === 'healthcare' ? 'healthcare'
+    : need === 'housing' ? 'housing'
+    : need === 'school' ? 'school'
+    : need === 'work' ? 'work'
+    : need === 'legal' ? 'legal'
+    : 'food';
+
+  setTimeout(() => {
+    if (map) {
+      const center = map.getCenter();
+      searchNearbyResources({ lat: center.lat(), lng: center.lng() }, type);
+    }
+  }, 2000);
+}
+
+// CHAT
 document.getElementById('send-btn').addEventListener('click', sendMessage);
-document.getElementById('user-input').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') sendMessage();
+document.getElementById('user-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+document.querySelectorAll('.quick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.getElementById('user-input').value = btn.dataset.msg;
+    sendMessage();
+  });
 });
 
 async function sendMessage() {
   const input = document.getElementById('user-input');
   const message = input.value.trim();
   if (!message) return;
-
   input.value = '';
   addMessage('user', message);
-
-  // Add typing indicator
   const typing = addMessage('typing', 'LandingPad is thinking...');
 
   try {
-    const response = await fetch('/chat', {
+    const res = await fetch('/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        message,
-        history: chatHistory,
-        userContext
-      })
+      body: JSON.stringify({ message, history: chatHistory, userContext })
     });
-
-    const data = await response.json();
+    const data = await res.json();
     typing.remove();
-
-    const reply = data.reply || 'Sorry, something went wrong. Please try again.';
+    const reply = data.reply || 'Sorry, something went wrong.';
     addMessage('bot', reply);
-
-    // Save to history
     chatHistory.push({ role: 'user', parts: [{ text: message }] });
     chatHistory.push({ role: 'model', parts: [{ text: reply }] });
-
-  } catch (error) {
+  } catch {
     typing.remove();
-    addMessage('bot', 'Connection error. Please check your internet and try again.');
+    addMessage('bot', 'Connection error. Please try again.');
   }
 }
 
 function addMessage(type, text) {
   const messages = document.getElementById('chat-messages');
   const div = document.createElement('div');
-  div.classList.add('message', type);
-  div.textContent = text;
+  div.className = `message ${type}`;
   div.textContent = text.replace(/\*\*(.*?)\*\*/g, '$1').replace(/\*(.*?)\*/g, '$1');
   messages.appendChild(div);
   messages.scrollTop = messages.scrollHeight;
   return div;
 }
+
+// LANGUAGE
+document.getElementById('lang-btn').addEventListener('click', () => {
+  document.getElementById('lang-overlay').classList.remove('hidden');
+  renderLanguages();
+});
+document.getElementById('close-lang-btn').addEventListener('click', () => {
+  document.getElementById('lang-overlay').classList.add('hidden');
+});
+document.getElementById('add-lang-btn').addEventListener('click', () => {
+  const val = document.getElementById('new-lang-input').value.trim();
+  if (val && !savedLanguages.includes(val)) {
+    savedLanguages.push(val);
+    renderLanguages();
+    document.getElementById('new-lang-input').value = '';
+  }
+});
+
+function renderLanguages() {
+  const list = document.getElementById('saved-languages');
+  list.innerHTML = '';
+  savedLanguages.forEach(lang => {
+    const item = document.createElement('div');
+    item.className = `lang-item ${lang === activeLanguage ? 'active' : ''}`;
+    item.innerHTML = `<span>${lang}</span>${lang === activeLanguage ? '<span>✓ Active</span>' : ''}`;
+    item.addEventListener('click', () => {
+      activeLanguage = lang;
+      document.getElementById('lang-btn').textContent = `🌐 ${lang.slice(0, 2).toUpperCase()} ▾`;
+      renderLanguages();
+    });
+    list.appendChild(item);
+  });
+}
+
+// VOICE INPUT
+document.getElementById('mic-btn').addEventListener('click', () => {
+  if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
+    alert('Voice input not supported in this browser.');
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const recognition = new SR();
+  recognition.lang = 'auto';
+  recognition.onresult = e => {
+    document.getElementById('user-input').value = e.results[0][0].transcript;
+  };
+  recognition.start();
+});
+
+// PLANNER
+document.getElementById('add-event-btn').addEventListener('click', () => {
+  const title = prompt('Appointment title?');
+  const date = prompt('Date? (e.g. Jun 2, 10am)');
+  if (title && date) {
+    plannerEvents.push({ title, date });
+    renderPlanner();
+  }
+});
+
+function renderPlanner() {
+  const container = document.getElementById('planner-events');
+  container.innerHTML = '';
+  plannerEvents.slice(0, 3).forEach(event => {
+    const div = document.createElement('div');
+    div.className = 'planner-event';
+    div.innerHTML = `<span>${event.date}</span> — ${event.title}`;
+    container.appendChild(div);
+  });
+}
+
+// EMAIL DRAFT
+document.getElementById('draft-email-btn').addEventListener('click', async () => {
+  const prompt = document.getElementById('email-prompt').value.trim();
+  if (!prompt) return;
+  const draftEl = document.getElementById('email-draft');
+  draftEl.classList.remove('hidden');
+  draftEl.textContent = 'Drafting your email...';
+
+  try {
+    const res = await fetch('/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        message: `Write a professional email for this request: ${prompt}. Write it in the language implied by the request. Only return the email text, no explanation.`,
+        history: [],
+        userContext
+      })
+    });
+    const data = await res.json();
+    draftEl.textContent = data.reply || 'Could not generate email.';
+  } catch {
+    draftEl.textContent = 'Error generating email. Try again.';
+  }
+});
+
+// NEW SESSION
+document.getElementById('new-session-btn').addEventListener('click', () => {
+  if (confirm('Start a new session? Current chat will be cleared.')) {
+    chatHistory = [];
+    document.getElementById('chat-messages').innerHTML = '';
+    document.getElementById('recommended-list').innerHTML = '';
+    document.getElementById('app-screen').classList.add('hidden');
+    document.getElementById('intake-screen').classList.remove('hidden');
+  }
+});
