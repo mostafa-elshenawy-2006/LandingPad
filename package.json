@@ -1,0 +1,27 @@
+{
+  "name": "landingpad",
+  "version": "1.0.0",
+  "description": "A main guide to be able to assist immigrant or newcomers naviagte a new lace they travlled to with different resources to assist them in day to day life.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mostafa-elshenawy-2006/LandingPad.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/mostafa-elshenawy-2006/LandingPad/issues"
+  },
+  "homepage": "https://github.com/mostafa-elshenawy-2006/LandingPad#readme",
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1"
+  }
+}
