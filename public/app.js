@@ -7,6 +7,8 @@ let activeLanguage = 'English';
 let plannerEvents = [];
 let map_api_key = '';
 let pinnedPlaces = [];
+let gmailConnected = false;
+let latestEmailDraft = '';
 const aiRecommendedQueries = new Set();
 
 const RESOURCE_TYPES = {
@@ -741,6 +743,36 @@ function renderPlanner() {
   });
 }
 
+function updateGmailUI() {
+  const gmailBtn = document.getElementById('gmail-action-btn');
+  const toInput = document.getElementById('gmail-to-input');
+  if (!gmailBtn || !toInput) return;
+
+  gmailBtn.textContent = gmailConnected ? '📤 Send Email' : '🔗 Connect Gmail';
+  toInput.classList.toggle('hidden', !gmailConnected);
+}
+
+async function checkGmailStatus() {
+  try {
+    const res = await fetch('/auth/status');
+    const data = await res.json();
+    gmailConnected = Boolean(data.connected);
+  } catch {
+    gmailConnected = false;
+  }
+  updateGmailUI();
+}
+
+function parseDraftForSend(draftText) {
+  const cleanDraft = draftText.trim();
+  const subjectMatch = cleanDraft.match(/^Subject:\s*(.+)$/im);
+  const subject = subjectMatch ? subjectMatch[1].trim() : 'Message from LandingPad';
+  const body = cleanDraft
+    .replace(/^Subject:\s*.+\n?/im, '')
+    .trim();
+  return { subject, body };
+}
+
 document.getElementById('draft-email-btn').addEventListener('click', async () => {
   const prompt = document.getElementById('email-prompt').value.trim();
   if (!prompt) return;
@@ -756,7 +788,8 @@ document.getElementById('draft-email-btn').addEventListener('click', async () =>
       body: JSON.stringify({ prompt, language: activeLanguage })
     });
     const data = await res.json();
-    draftEl.innerHTML = (data.reply || 'Could not generate email.')
+    latestEmailDraft = data.reply || 'Could not generate email.';
+    draftEl.innerHTML = latestEmailDraft
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\n/g, '<br>');
     copyBtn.classList.remove('hidden');
@@ -771,6 +804,36 @@ document.getElementById('copy-email-btn').addEventListener('click', () => {
     document.getElementById('copy-email-btn').textContent = '✅ Copied!';
     setTimeout(() => { document.getElementById('copy-email-btn').textContent = '📋 Copy email'; }, 2000);
   });
+});
+
+document.getElementById('gmail-action-btn').addEventListener('click', async () => {
+  if (!gmailConnected) {
+    window.location.href = '/auth/google';
+    return;
+  }
+
+  const to = document.getElementById('gmail-to-input').value.trim();
+  const draftText = latestEmailDraft || document.getElementById('email-draft').textContent;
+  if (!to) { alert('Please enter a recipient email address.'); return; }
+  if (!draftText.trim()) { alert('Please draft an email first.'); return; }
+
+  const gmailBtn = document.getElementById('gmail-action-btn');
+  const { subject, body } = parseDraftForSend(draftText);
+  gmailBtn.textContent = 'Sending...';
+
+  try {
+    const res = await fetch('/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to, subject, body })
+    });
+    if (!res.ok) throw new Error('Send failed');
+    gmailBtn.textContent = '✅ Sent!';
+    setTimeout(updateGmailUI, 2000);
+  } catch {
+    gmailBtn.textContent = 'Could not send';
+    setTimeout(updateGmailUI, 2000);
+  }
 });
 
 document.getElementById('new-session-btn').addEventListener('click', () => {
@@ -828,3 +891,4 @@ document.getElementById('settings-about-btn').addEventListener('click', () => {
 });
 
 updateUILanguage(activeLanguage);
+checkGmailStatus();

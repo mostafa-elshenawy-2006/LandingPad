@@ -549,6 +549,24 @@ body[data-text-size="large"] .sidebar-section-label { font-size: 14px; }
   gap: 6px;
 }
 
+.gmail-send-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.gmail-send-row input {
+  flex: 1;
+  min-width: 180px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 11px;
+}
+
 .email-input-row input {
   flex: 1;
   padding: 7px 10px;

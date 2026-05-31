@@ -1,5 +1,6 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { google } = require('googleapis');
 require('dotenv').config();
 
 const app = express();
@@ -7,6 +8,43 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.send'];
+const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://landingpad-425865427791.us-west1.run.app/auth/google/callback';
+let gmailTokens = null;
+
+function getOAuthClient() {
+  const client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    GOOGLE_REDIRECT_URI
+  );
+  client.on('tokens', tokens => {
+    gmailTokens = { ...(gmailTokens || {}), ...tokens };
+  });
+  if (gmailTokens) client.setCredentials(gmailTokens);
+  return client;
+}
+
+function encodeEmailHeader(value = '') {
+  return String(value).replace(/[\r\n]/g, ' ').trim();
+}
+
+function createRawEmail({ to, subject, body }) {
+  const message = [
+    `To: ${encodeEmailHeader(to)}`,
+    `Subject: ${encodeEmailHeader(subject)}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/plain; charset="UTF-8"',
+    '',
+    body || ''
+  ].join('\r\n');
+
+  return Buffer.from(message)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+}
 
 const SYSTEM_PROMPT = `You are LandingPad, a warm and helpful guide for immigrants and newcomers arriving in a new country.
 
@@ -57,6 +95,60 @@ app.post('/email', async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Failed to generate email' });
+  }
+});
+
+app.get('/auth/google', (req, res) => {
+  if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+    return res.status(500).send('Google OAuth is not configured');
+  }
+
+  const authUrl = getOAuthClient().generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: GMAIL_SCOPES
+  });
+  res.redirect(authUrl);
+});
+
+app.get('/auth/google/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.status(400).send('Missing OAuth code');
+
+  try {
+    const oauth2Client = getOAuthClient();
+    const { tokens } = await oauth2Client.getToken(code);
+    gmailTokens = tokens;
+    res.redirect('/?gmail=connected');
+  } catch (error) {
+    console.error(error);
+    res.status(500).send('Failed to connect Gmail');
+  }
+});
+
+app.get('/auth/status', (req, res) => {
+  res.json({ connected: Boolean(gmailTokens && (gmailTokens.access_token || gmailTokens.refresh_token)) });
+});
+
+app.post('/send-email', async (req, res) => {
+  const { to, subject, body } = req.body;
+  if (!gmailTokens) return res.status(401).json({ error: 'Gmail is not connected' });
+  if (!to || !subject || !body) return res.status(400).json({ error: 'Missing to, subject, or body' });
+
+  try {
+    const oauth2Client = getOAuthClient();
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const result = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: createRawEmail({ to, subject, body })
+      }
+    });
+    gmailTokens = { ...gmailTokens, ...oauth2Client.credentials };
+    res.json({ ok: true, id: result.data.id });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to send email' });
   }
 });
 
