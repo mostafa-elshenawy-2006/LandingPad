@@ -713,3 +713,195 @@ body[data-text-size="large"] .sidebar-section-label { font-size: 14px; }
 }
 
 .modal-btn:hover { background: var(--bg); }
+
+/* MOBILE */
+.sidebar-toggle,
+.sidebar-toggle-btn {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  body {
+    height: auto;
+    min-height: 100vh;
+    overflow: auto;
+  }
+
+  #app-screen {
+    height: auto;
+    min-height: 100vh;
+    overflow: visible;
+  }
+
+  .header {
+    min-height: var(--header-height);
+    height: auto;
+    padding: 8px 10px;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .header-left,
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .session-label {
+    margin-left: 0;
+    padding-left: 0;
+    border-left: none;
+  }
+
+  .main-layout {
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+    flex: none;
+  }
+
+  .sidebar-toggle-btn {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .sidebar {
+    display: none;
+    max-height: 38vh;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .sidebar-toggle:checked + .sidebar-toggle-btn + .sidebar {
+    display: flex;
+  }
+
+  .sidebar-search input,
+  .email-input-row input,
+  .gmail-send-row input,
+  .chat-input-row input {
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .place-item {
+    min-height: 44px;
+    padding: 9px 10px;
+  }
+
+  .map-col {
+    height: 50vh;
+    min-height: 360px;
+    flex: none;
+  }
+
+  .filter-pills {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .pill {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 0 14px;
+  }
+
+  #map {
+    min-height: 0;
+  }
+
+  .chat-col {
+    min-height: 45vh;
+    max-height: none;
+    border-left: none;
+    border-top: 1px solid var(--border);
+    flex: none;
+  }
+
+  .chat-messages {
+    min-height: 220px;
+    max-height: 45vh;
+  }
+
+  .quick-actions {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .quick-btn {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    flex: 0 0 auto;
+    padding: 0 14px;
+  }
+
+  .bottom-bar {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+  }
+
+  .bottom-planner {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    overflow: visible;
+  }
+
+  .bottom-email {
+    padding: 10px 14px 16px;
+  }
+
+  .planner-events,
+  .email-input-row,
+  .gmail-send-row {
+    flex-direction: column;
+  }
+
+  .planner-event {
+    min-height: 44px;
+  }
+
+  button,
+  .btn-secondary,
+  .modal-btn,
+  #send-btn,
+  #mic-btn,
+  #draft-email-btn,
+  .planner-calendar-btn,
+  .settings-action,
+  .lang-add button,
+  .lang-close {
+    min-height: 44px;
+  }
+
+  #mic-btn,
+  .planner-calendar-btn {
+    min-width: 44px;
+  }
+
+  .modal-actions {
+    flex-direction: column;
+  }
+
+  .modal-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
