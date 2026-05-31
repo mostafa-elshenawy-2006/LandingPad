@@ -8,6 +8,7 @@ let plannerEvents = [];
 let map_api_key = '';
 let pinnedPlaces = [];
 let gmailConnected = false;
+let gmailUser = { name: '', email: '' };
 let latestEmailDraft = '';
 const aiRecommendedQueries = new Set();
 
@@ -752,13 +753,36 @@ function updateGmailUI() {
   toInput.classList.toggle('hidden', !gmailConnected);
 }
 
+function replaceNamePlaceholders(text) {
+  if (!gmailUser.name || !text) return text;
+  return text
+    .replace(/\[?(?:your name|name placeholder|sender name|full name)\]?/gi, gmailUser.name)
+    .replace(/\{\{(?:your_name|name|sender_name)\}\}/gi, gmailUser.name);
+}
+
+function renderEmailDraft(text) {
+  const draftEl = document.getElementById('email-draft');
+  latestEmailDraft = replaceNamePlaceholders(text || '');
+  draftEl.innerHTML = latestEmailDraft
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
+}
+
 async function checkGmailStatus() {
   try {
     const res = await fetch('/auth/status');
     const data = await res.json();
     gmailConnected = Boolean(data.connected);
+    gmailUser = {
+      name: data.name || '',
+      email: data.email || ''
+    };
+    if (latestEmailDraft) {
+      renderEmailDraft(latestEmailDraft);
+    }
   } catch {
     gmailConnected = false;
+    gmailUser = { name: '', email: '' };
   }
   updateGmailUI();
 }
@@ -788,10 +812,7 @@ document.getElementById('draft-email-btn').addEventListener('click', async () =>
       body: JSON.stringify({ prompt, language: activeLanguage })
     });
     const data = await res.json();
-    latestEmailDraft = data.reply || 'Could not generate email.';
-    draftEl.innerHTML = latestEmailDraft
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>');
+    renderEmailDraft(data.reply || 'Could not generate email.');
     copyBtn.classList.remove('hidden');
   } catch {
     draftEl.textContent = 'Error generating email. Try again.';

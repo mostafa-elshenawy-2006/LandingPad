@@ -8,9 +8,14 @@ app.use(express.json());
 app.use(express.static('public'));
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const GMAIL_SCOPES = ['https://www.googleapis.com/auth/gmail.send'];
+const GMAIL_SCOPES = [
+  'https://www.googleapis.com/auth/gmail.send',
+  'profile',
+  'email'
+];
 const GOOGLE_REDIRECT_URI = process.env.GOOGLE_REDIRECT_URI || 'https://landingpad-425865427791.us-west1.run.app/auth/google/callback';
 let gmailTokens = null;
+let gmailUser = null;
 
 function getOAuthClient() {
   const client = new google.auth.OAuth2(
@@ -138,6 +143,13 @@ app.get('/auth/google/callback', async (req, res) => {
     const oauth2Client = getOAuthClient();
     const { tokens } = await oauth2Client.getToken(code);
     gmailTokens = tokens;
+    oauth2Client.setCredentials(tokens);
+    const oauth2 = google.oauth2({ version: 'v2', auth: oauth2Client });
+    const userInfo = await oauth2.userinfo.get();
+    gmailUser = {
+      name: userInfo.data.name || '',
+      email: userInfo.data.email || ''
+    };
     res.redirect('/?gmail=connected');
   } catch (error) {
     console.error(error);
@@ -146,7 +158,11 @@ app.get('/auth/google/callback', async (req, res) => {
 });
 
 app.get('/auth/status', (req, res) => {
-  res.json({ connected: Boolean(gmailTokens && (gmailTokens.access_token || gmailTokens.refresh_token)) });
+  res.json({
+    connected: Boolean(gmailTokens && (gmailTokens.access_token || gmailTokens.refresh_token)),
+    name: gmailUser?.name || '',
+    email: gmailUser?.email || ''
+  });
 });
 
 app.post('/send-email', async (req, res) => {
