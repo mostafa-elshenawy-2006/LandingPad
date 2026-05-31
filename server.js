@@ -89,7 +89,7 @@ app.post('/chat', async (req, res) => {
   const { message, history, userContext } = req.body;
   try {
     const model = genAI.getGenerativeModel({
-      model: 'gemini-3.5-flash',
+      model: 'gemini-2.5-flash',
       systemInstruction: SYSTEM_PROMPT
     });
     const chat = model.startChat({ history: history || [] });
@@ -107,7 +107,7 @@ app.post('/chat', async (req, res) => {
 app.post('/email', async (req, res) => {
   const { prompt, language } = req.body;
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-3.5-flash' });
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
     const result = await model.generateContent(
       `Write a professional email for this request: "${prompt}".
       Write it in ${language || 'English'}.

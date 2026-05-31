@@ -229,11 +229,15 @@ async function translateUILabels(lang) {
     body: JSON.stringify({ message, history: [] })
   });
   const data = await res.json();
-  const jsonText = (data.reply || '')
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```$/i, '')
-    .trim();
-  UI_TRANSLATIONS[lang] = JSON.parse(jsonText);
+  try {
+    const raw = data.reply || '';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found');
+    UI_TRANSLATIONS[lang] = JSON.parse(jsonMatch[0]);
+  } catch (e) {
+    console.log('Translation parse failed:', e);
+    throw e;
+  }
 }
 
 async function init() {
