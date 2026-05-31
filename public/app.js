@@ -193,7 +193,12 @@ document.getElementById('close-modal-btn').addEventListener('click', () => {
 // SIDEBAR
 function updateSidebar(places, type) {
   const list = document.getElementById('recommended-list');
-  places.forEach(place => {
+  
+  // Limit total sidebar items to 5 per category
+  const existing = list.querySelectorAll('.place-item').length;
+  if (existing >= 10) return;
+
+  places.slice(0, 2).forEach(place => {
     const item = document.createElement('div');
     item.className = 'place-item';
     item.innerHTML = `
@@ -205,11 +210,63 @@ function updateSidebar(places, type) {
     item.addEventListener('click', () => {
       map.setCenter(place.geometry.location);
       map.setZoom(16);
+      openPlaceModal(place, type);
     });
     list.appendChild(item);
   });
 }
+document.getElementById('sidebar-search').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const query = e.target.value.trim();
+    if (!query || !map) return;
 
+    const service = new google.maps.places.PlacesService(map);
+    service.textSearch({
+      query: `${query} ${userContext.location || 'Eugene Oregon'}`,
+      location: map.getCenter(),
+      radius: 10000
+    }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
+        const place = results[0];
+        map.setCenter(place.geometry.location);
+        map.setZoom(16);
+
+        const marker = new google.maps.Marker({
+          map,
+          position: place.geometry.location,
+          title: place.name,
+          animation: google.maps.Animation.DROP,
+          icon: {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#FFD700" stroke="white" stroke-width="2"/><text x="18" y="23" text-anchor="middle" font-size="16">🔍</text></svg>`)}`,
+            scaledSize: new google.maps.Size(36, 36)
+          }
+        });
+        markers.push(marker);
+
+        const list = document.getElementById('recommended-list');
+        const item = document.createElement('div');
+        item.className = 'place-item';
+        item.innerHTML = `
+          <div class="place-icon" style="background:#FFD70033;">🔍</div>
+          <div>
+            <div class="place-name">${place.name}</div>
+            <div class="place-dist">${place.vicinity ? place.vicinity.split(',')[0] : ''}</div>
+          </div>`;
+        item.addEventListener('click', () => {
+          map.setCenter(place.geometry.location);
+          map.setZoom(16);
+          openPlaceModal(place, 'healthcare');
+        });
+        list.prepend(item);
+
+        e.target.value = '';
+        openPlaceModal(place, 'healthcare');
+      } else {
+        alert('Place not found. Try a more specific name!');
+      }
+    });
+  }
+});
 // FILTER PILLS
 document.querySelectorAll('.pill').forEach(pill => {
   pill.addEventListener('click', () => {
