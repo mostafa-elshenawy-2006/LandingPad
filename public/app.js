@@ -182,11 +182,14 @@ window.initMap = function () {
     styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
   });
 
+  if (userContext.location) {
+    geocodeLocation(userContext.location);
+  }
+
   if (navigator.geolocation) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const userPos = { lat: position.coords.latitude, lng: position.coords.longitude };
-        map.setCenter(userPos);
         new google.maps.Marker({
           map, position: userPos, title: 'You are here',
           icon: {
@@ -194,7 +197,6 @@ window.initMap = function () {
             scaledSize: new google.maps.Size(24, 24)
           }
         });
-        searchNearbyResources(userPos, activeFilter);
       },
       () => {}
     );
@@ -211,23 +213,46 @@ document.getElementById('start-btn').addEventListener('click', () => {
   document.getElementById('intake-screen').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
   init();
-  geocodeLocation(location);
   addMessage('bot', `👋 Welcome to LandingPad! I'm here to help you navigate life in ${location}. You can type in any language. What's your first question?`);
-  loadRecommendedPlaces(location, need);
 });
 
 function geocodeLocation(location) {
-  if (!map_api_key) return;
-  fetch(`https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${map_api_key}`)
-    .then(r => r.json())
-    .then(data => {
-      if (data.results[0]) {
-        const coords = data.results[0].geometry.location;
-        map.setCenter(coords);
-        map.setZoom(13);
-        searchNearbyResources(coords, activeFilter);
+  if (!map || !window.google || !google.maps) return;
+
+  if (google.maps.places) {
+    const service = new google.maps.places.PlacesService(map);
+    service.textSearch({ query: location }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
+        centerMapOnTypedLocation(results[0].geometry.location);
+        return;
       }
+
+      console.log(`Could not resolve location with Places "${location}": ${status}`);
+      geocodeLocationWithGeocoder(location);
     });
+    return;
+  }
+
+  geocodeLocationWithGeocoder(location);
+}
+
+function geocodeLocationWithGeocoder(location) {
+  const geocoder = new google.maps.Geocoder();
+  geocoder.geocode({ address: location }, (results, status) => {
+    if (status !== 'OK' || !results[0]) {
+      console.log(`Could not geocode location "${location}": ${status}`);
+      alert(`Could not find "${location}" on the map. Please try adding the state or country.`);
+      return;
+    }
+
+    centerMapOnTypedLocation(results[0].geometry.location);
+  });
+}
+
+function centerMapOnTypedLocation(coords) {
+  map.setCenter(coords);
+  map.setZoom(13);
+  searchNearbyResources(coords, activeFilter);
 }
 
 function searchNearbyResources(coords, filter) {
@@ -390,21 +415,6 @@ document.querySelectorAll('.pill').forEach(pill => {
     }
   });
 });
-
-function loadRecommendedPlaces(location, need) {
-  const type = need === 'healthcare' ? 'healthcare'
-    : need === 'housing' ? 'housing'
-    : need === 'school' ? 'school'
-    : need === 'work' ? 'work'
-    : need === 'legal' ? 'legal'
-    : 'food';
-  setTimeout(() => {
-    if (map) {
-      const center = map.getCenter();
-      searchNearbyResources({ lat: center.lat(), lng: center.lng() }, type);
-    }
-  }, 2000);
-}
 
 document.getElementById('send-btn').addEventListener('click', sendMessage);
 document.getElementById('user-input').addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
