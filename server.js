@@ -25,19 +25,15 @@ Your goal is to immediately point people to real named places they can visit, wi
 
 app.post('/chat', async (req, res) => {
   const { message, history, userContext } = req.body;
-
   try {
     const model = genAI.getGenerativeModel({
       model: 'gemini-2.5-flash',
       systemInstruction: SYSTEM_PROMPT
     });
-
     const chat = model.startChat({ history: history || [] });
-
     const contextPrefix = userContext
-      ? `[User context: From ${userContext.country}, currently in ${userContext.location}, needs help with: ${userContext.need}]\n\n`
+      ? `[User context: From ${userContext.country}, currently in ${userContext.location}, needs help with: ${userContext.need}. RESPOND IN: ${userContext.language || 'English'}]\n\n`
       : '';
-
     const result = await chat.sendMessage(contextPrefix + message);
     res.json({ reply: result.response.text() });
   } catch (error) {
@@ -46,7 +42,26 @@ app.post('/chat', async (req, res) => {
   }
 });
 
+app.post('/email', async (req, res) => {
+  const { prompt, language } = req.body;
+  try {
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+    const result = await model.generateContent(
+      `Write a professional email for this request: "${prompt}".
+      Write it in ${language || 'English'}.
+      Output ONLY the email with Subject line and body.
+      Start with "Subject:" on the first line.
+      Do not include any explanation or commentary.`
+    );
+    res.json({ reply: result.response.text() });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to generate email' });
+  }
+});
+
 const PORT = process.env.PORT || 3000;
+
 app.get('/config', (req, res) => {
   res.json({ mapsApiKey: process.env.MAPS_API_KEY });
 });
@@ -54,7 +69,6 @@ app.get('/config', (req, res) => {
 app.get('/place-details', async (req, res) => {
   const { placeId } = req.query;
   if (!placeId) return res.status(400).json({ error: 'Missing placeId' });
-  
   try {
     const response = await fetch(
       `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,opening_hours,photos,rating,website,url&key=${process.env.MAPS_API_KEY}`
@@ -68,12 +82,15 @@ app.get('/place-details', async (req, res) => {
 
 app.get('/place-photo', async (req, res) => {
   const { ref } = req.query;
-  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${process.env.MAPS_API_KEY}`;
-  const response = await fetch(photoUrl);
-  const buffer = await response.arrayBuffer();
-  res.set('Content-Type', 'image/jpeg');
-  res.send(Buffer.from(buffer));
+  try {
+    const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${process.env.MAPS_API_KEY}`;
+    const response = await fetch(photoUrl);
+    const buffer = await response.arrayBuffer();
+    res.set('Content-Type', 'image/jpeg');
+    res.send(Buffer.from(buffer));
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch photo' });
+  }
 });
 
 app.listen(PORT, () => console.log(`LandingPad running on port ${PORT}`));
-

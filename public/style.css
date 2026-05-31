@@ -11,7 +11,7 @@
   --sidebar-width: 200px;
   --chat-width: 260px;
   --header-height: 48px;
-  --bottom-height: 100px;
+  --bottom-height: 200px;
 }
 
 body {
@@ -453,14 +453,15 @@ body {
 
 .email-draft {
   margin-top: 6px;
-  padding: 8px;
-  background: var(--bg);
+  padding: 10px;
+  background: var(--white);
   border-radius: 8px;
   font-size: 12px;
   color: var(--text);
-  max-height: 120px;
+  max-height: 80px;
   overflow-y: auto;
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--blue);
+  line-height: 1.6;
 }
 
 /* PLACE MODAL */
