@@ -288,6 +288,61 @@ function addMessage(type, text) {
   return div;
 }
 
+function extractAndPinPlaces(text) {
+  if (!map) return;
+
+  // Just search for the whole response context on the map
+  const placeMatch = text.match(/([A-Z][a-zA-Z\s]+(?:Clinic|Center|Bank|Library|School|Services|Aid|Office|Pantry|Village|Bird))/);
+  
+  if (placeMatch) {
+    const placeName = placeMatch[1].trim();
+    const service = new google.maps.places.PlacesService(map);
+    service.findPlaceFromQuery({
+      query: `${placeName} Eugene Oregon`,
+      fields: ['name', 'geometry', 'place_id', 'vicinity']
+    }, (results, status) => {
+      if (status === google.maps.places.PlacesServiceStatus.OK && results[0]) {
+        dropAIPin(results[0], placeName);
+      }
+    });
+  }
+}
+
+function dropAIPin(place, name) {
+  // Gold star pin for AI recommendations
+  const marker = new google.maps.Marker({
+    map,
+    position: place.geometry.location,
+    title: name,
+    animation: google.maps.Animation.DROP,
+    icon: {
+      url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 36 36"><circle cx="18" cy="18" r="16" fill="#FFD700" stroke="white" stroke-width="2"/><text x="18" y="23" text-anchor="middle" font-size="16">⭐</text></svg>`)}`,
+      scaledSize: new google.maps.Size(36, 36)
+    }
+  });
+
+  markers.push(marker);
+  map.panTo(place.geometry.location);
+
+  // Add to sidebar
+  const list = document.getElementById('recommended-list');
+  const item = document.createElement('div');
+  item.className = 'place-item';
+  item.innerHTML = `
+    <div class="place-icon" style="background:#FFD70033;">⭐</div>
+    <div>
+      <div class="place-name">${name}</div>
+      <div class="place-dist">AI recommended</div>
+    </div>`;
+  item.addEventListener('click', () => {
+    map.setCenter(place.geometry.location);
+    map.setZoom(16);
+  });
+  list.prepend(item);
+
+  marker.addListener('click', () => openPlaceModal(place, 'healthcare'));
+}
+
 // LANGUAGE
 document.getElementById('lang-btn').addEventListener('click', () => {
   document.getElementById('lang-overlay').classList.remove('hidden');
