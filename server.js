@@ -37,11 +37,15 @@ function encodeSubject(value = '') {
 }
 
 function getGoogleErrorMessage(error) {
-  return error.response?.data?.error_description
+  const value = error.response?.data?.error_description
+    || error.response?.data?.error?.message
     || error.response?.data?.error
     || error.errors?.[0]?.message
-    || error.message
-    || 'Failed to send email';
+    || error.message;
+
+  if (!value) return 'Failed to send email';
+  if (typeof value === 'string') return value;
+  return JSON.stringify(value);
 }
 
 function createRawEmail({ from, to, subject, body }) {

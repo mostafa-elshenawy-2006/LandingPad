@@ -828,7 +828,10 @@ document.getElementById('gmail-action-btn').addEventListener('click', async () =
       body: JSON.stringify({ to, subject, body })
     });
     const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Send failed');
+    const errorMessage = typeof data.error === 'string'
+      ? data.error
+      : data.error?.message || JSON.stringify(data.error || {});
+    if (!res.ok) throw new Error(errorMessage || 'Send failed');
     gmailBtn.textContent = '✅ Sent!';
     setTimeout(updateGmailUI, 2000);
   } catch (error) {
