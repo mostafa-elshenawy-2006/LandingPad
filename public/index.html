@@ -135,6 +135,26 @@
 
   </div>
 
+
+<!-- RESOURCE CARD MODAL -->
+<div id="place-modal" class="place-modal hidden" onclick="this.classList.add('hidden')">
+  <div class="place-modal-content" onclick="event.stopPropagation()">
+    <button id="close-modal-btn" class="modal-close">✕</button>
+    <div id="modal-photo" class="modal-photo"></div>
+    <div class="modal-body">
+      <h2 id="modal-name"></h2>
+      <div id="modal-rating" class="modal-rating"></div>
+      <div id="modal-address" class="modal-info"></div>
+      <div id="modal-phone" class="modal-info"></div>
+      <div id="modal-hours" class="modal-hours"></div>
+      <div class="modal-actions">
+        <a id="modal-directions" href="#" target="_blank" class="modal-btn">🗺️ Directions</a>
+        <a id="modal-website" href="#" target="_blank" class="modal-btn hidden">🌐 Website</a>
+        <button id="modal-chat-btn" class="modal-btn">💬 Ask AI about this</button>
+      </div>
+    </div>
+  </div>
+</div>
   <script src="app.js"></script>
 </body>
 </html>

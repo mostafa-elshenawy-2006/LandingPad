@@ -56,4 +56,30 @@ const PORT = process.env.PORT || 3000;
 app.get('/config', (req, res) => {
   res.json({ mapsApiKey: process.env.MAPS_API_KEY });
 });
+
+app.get('/place-details', async (req, res) => {
+  const { placeId } = req.query;
+  if (!placeId) return res.status(400).json({ error: 'Missing placeId' });
+  
+  try {
+    const response = await fetch(
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,opening_hours,photos,rating,website,url&key=${process.env.MAPS_API_KEY}`
+    );
+    const data = await response.json();
+    res.json(data.result);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to fetch place details' });
+  }
+});
+
+app.get('/place-photo', async (req, res) => {
+  const { ref } = req.query;
+  const photoUrl = `https://maps.googleapis.com/maps/api/place/photo?maxwidth=400&photo_reference=${ref}&key=${process.env.MAPS_API_KEY}`;
+  const response = await fetch(photoUrl);
+  const buffer = await response.arrayBuffer();
+  res.set('Content-Type', 'image/jpeg');
+  res.send(Buffer.from(buffer));
+});
+
 app.listen(PORT, () => console.log(`LandingPad running on port ${PORT}`));
+

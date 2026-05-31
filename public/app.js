@@ -37,6 +37,34 @@ window.initMap = function () {
     zoom: 13,
     styles: [{ featureType: 'poi', elementType: 'labels', stylers: [{ visibility: 'off' }] }]
   });
+
+  // Try to get real GPS location
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const userPos = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        };
+        map.setCenter(userPos);
+
+        new google.maps.Marker({
+          map,
+          position: userPos,
+          title: 'You are here',
+          icon: {
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#1a73e8" stroke="white" stroke-width="3"/><circle cx="12" cy="12" r="4" fill="white"/></svg>`)}`,
+            scaledSize: new google.maps.Size(24, 24)
+          }
+        });
+
+        searchNearbyResources(userPos, activeFilter);
+      },
+      () => {
+        // GPS denied — fall back to geocoded location
+      }
+    );
+  }
 };
 
 // INTAKE
@@ -106,17 +134,61 @@ function addMarker(place, type) {
     }
   });
 
-  const infoWindow = new google.maps.InfoWindow({
-    content: `<div style="font-family:sans-serif;padding:4px;max-width:200px;">
-      <strong>${place.name}</strong><br/>
-      <small>${place.vicinity || ''}</small><br/>
-      ${place.rating ? `⭐ ${place.rating}` : ''}
-    </div>`
-  });
-
-  marker.addListener('click', () => infoWindow.open(map, marker));
+  marker.addListener('click', () => openPlaceModal(place, type));
   markers.push(marker);
 }
+
+async function openPlaceModal(place, type) {
+  const modal = document.getElementById('place-modal');
+  modal.classList.remove('hidden');
+
+  document.getElementById('modal-name').textContent = place.name;
+  document.getElementById('modal-rating').textContent = place.rating ? `⭐ ${place.rating} · ${RESOURCE_TYPES[type].emoji} ${type}` : `${RESOURCE_TYPES[type].emoji} ${type}`;
+  document.getElementById('modal-address').textContent = `📍 ${place.vicinity || ''}`;
+  document.getElementById('modal-phone').textContent = '';
+  document.getElementById('modal-hours').textContent = '';
+  document.getElementById('modal-photo').innerHTML = `<div class="modal-photo-placeholder">${RESOURCE_TYPES[type].emoji}</div>`;
+
+  const directionsUrl = `https://www.google.com/maps/dir/?api=1&destination_place_id=${place.place_id}`;
+  document.getElementById('modal-directions').href = directionsUrl;
+
+  document.getElementById('modal-chat-btn').onclick = () => {
+    modal.classList.add('hidden');
+    document.getElementById('user-input').value = `Tell me about ${place.name} and how it can help me`;
+    sendMessage();
+  };
+
+  try {
+    const res = await fetch(`/place-details?placeId=${place.place_id}`);
+    const details = await res.json();
+
+    if (details.photos && details.photos[0]) {
+      const photoRef = details.photos[0].photo_reference;
+      const photoUrl = `/place-photo?ref=${photoRef}`;
+      document.getElementById('modal-photo').innerHTML = `<img src="${photoUrl}" alt="${place.name}" />`;
+    }
+
+    if (details.formatted_phone_number) {
+      document.getElementById('modal-phone').textContent = `📞 ${details.formatted_phone_number}`;
+    }
+
+    if (details.opening_hours && details.opening_hours.weekday_text) {
+      document.getElementById('modal-hours').textContent = details.opening_hours.weekday_text.slice(0, 3).join(' · ');
+    }
+
+    if (details.website) {
+      const websiteBtn = document.getElementById('modal-website');
+      websiteBtn.href = details.website;
+      websiteBtn.classList.remove('hidden');
+    }
+  } catch (e) {
+    console.log('Could not load place details');
+  }
+}
+
+document.getElementById('close-modal-btn').addEventListener('click', () => {
+  document.getElementById('place-modal').classList.add('hidden');
+});
 
 // SIDEBAR
 function updateSidebar(places, type) {
