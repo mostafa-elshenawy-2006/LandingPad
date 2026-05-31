@@ -367,7 +367,9 @@ document.getElementById('draft-email-btn').addEventListener('click', async () =>
       body: JSON.stringify({ prompt, language: activeLanguage })
     });
     const data = await res.json();
-    draftEl.textContent = data.reply || 'Could not generate email.';
+    draftEl.innerHTML = (data.reply || 'Could not generate email.')
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>');
     copyBtn.classList.remove('hidden');
   } catch {
     draftEl.textContent = 'Error generating email. Try again.';
