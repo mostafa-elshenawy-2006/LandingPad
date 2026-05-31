@@ -375,9 +375,8 @@ async function openPlaceModal(place, type) {
   document.getElementById('modal-phone').textContent = '';
   document.getElementById('modal-hours').textContent = '';
   document.getElementById('modal-photo').innerHTML = `<div class="modal-photo-placeholder">${meta.emoji}</div>`;
-  document.getElementById('modal-directions').href = place.place_id
-    ? `https://www.google.com/maps/dir/?api=1&destination_place_id=${place.place_id}`
-    : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${place.name} ${place.vicinity || place.formatted_address || ''}`)}`;
+  const destination = place.vicinity || place.formatted_address || place.name;
+  document.getElementById('modal-directions').href = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}&destination_place_id=${place.place_id || ''}`;
   const websiteBtn = document.getElementById('modal-website');
   websiteBtn.classList.add('hidden');
   const pinBtn = document.getElementById('modal-pin-btn');
