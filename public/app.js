@@ -6,6 +6,7 @@ let savedLanguages = ['English', 'Spanish', 'French', 'Arabic'];
 let activeLanguage = 'English';
 let plannerEvents = [];
 let map_api_key = '';
+let pinnedPlaces = [];
 const aiRecommendedQueries = new Set();
 
 const RESOURCE_TYPES = {
@@ -123,6 +124,77 @@ function escapeHTML(value = '') {
   }[char]));
 }
 
+function getPlacePosition(place) {
+  if (!place || !place.geometry || !place.geometry.location) return null;
+  const location = place.geometry.location;
+  return {
+    lat: typeof location.lat === 'function' ? location.lat() : location.lat,
+    lng: typeof location.lng === 'function' ? location.lng() : location.lng
+  };
+}
+
+function serializePlace(place) {
+  const position = getPlacePosition(place);
+  return {
+    place_id: place.place_id || `${place.name}-${place.vicinity || place.formatted_address || ''}`,
+    name: place.name,
+    vicinity: place.vicinity || place.formatted_address || '',
+    formatted_address: place.formatted_address || place.vicinity || '',
+    rating: place.rating,
+    geometry: position ? { location: position } : undefined
+  };
+}
+
+function savePinnedPlaces() {
+  localStorage.setItem('landingpad-pinned', JSON.stringify(pinnedPlaces));
+}
+
+function isPlacePinned(place) {
+  if (!place) return false;
+  const id = place.place_id || `${place.name}-${place.vicinity || place.formatted_address || ''}`;
+  return pinnedPlaces.some(pin => pin.place && pin.place.place_id === id);
+}
+
+function renderPinnedPlaces() {
+  const list = document.getElementById('pinned-list');
+  if (!list) return;
+  list.innerHTML = '';
+  pinnedPlaces.forEach(({ place, type }) => {
+    if (place && place.geometry && place.geometry.location) {
+      addPlaceToSidebar(place, type, { listId: 'pinned-list' });
+    }
+  });
+}
+
+function pinPlace(place, type) {
+  if (!place || isPlacePinned(place)) return false;
+  const pinned = { place: serializePlace(place), type };
+  pinnedPlaces.push(pinned);
+  savePinnedPlaces();
+  renderPinnedPlaces();
+  return true;
+}
+
+function unpinPlace(place) {
+  if (!place) return false;
+  const id = place.place_id || `${place.name}-${place.vicinity || place.formatted_address || ''}`;
+  const originalLength = pinnedPlaces.length;
+  pinnedPlaces = pinnedPlaces.filter(pin => pin.place && pin.place.place_id !== id);
+  if (pinnedPlaces.length === originalLength) return false;
+  savePinnedPlaces();
+  renderPinnedPlaces();
+  return true;
+}
+
+function loadPinnedPlaces() {
+  try {
+    pinnedPlaces = JSON.parse(localStorage.getItem('landingpad-pinned') || '[]');
+  } catch {
+    pinnedPlaces = [];
+  }
+  renderPinnedPlaces();
+}
+
 function updateUILanguage(lang) {
   const translations = { ...UI_TRANSLATIONS.English, ...(UI_TRANSLATIONS[lang] || {}) };
   const quickMessages = QUICK_ACTION_MESSAGES[lang] || QUICK_ACTION_MESSAGES.English;
@@ -212,6 +284,7 @@ document.getElementById('start-btn').addEventListener('click', () => {
   document.getElementById('session-label').textContent = `${country} → ${location}`;
   document.getElementById('intake-screen').classList.add('hidden');
   document.getElementById('app-screen').classList.remove('hidden');
+  loadPinnedPlaces();
   init();
   addMessage('bot', `👋 Welcome to LandingPad! I'm here to help you navigate life in ${location}. You can type in any language. What's your first question?`);
 });
@@ -300,6 +373,23 @@ async function openPlaceModal(place, type) {
     : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${place.name} ${place.vicinity || place.formatted_address || ''}`)}`;
   const websiteBtn = document.getElementById('modal-website');
   websiteBtn.classList.add('hidden');
+  const pinBtn = document.getElementById('modal-pin-btn');
+  const updatePinButton = () => {
+    pinBtn.textContent = isPlacePinned(place) ? '📌 Unpin this place' : '📌 Pin this place';
+  };
+  updatePinButton();
+  pinBtn.onclick = () => {
+    if (isPlacePinned(place)) {
+      unpinPlace(place);
+      pinBtn.textContent = 'Removed';
+    } else {
+      pinPlace(place, type);
+      pinBtn.textContent = '✅ Pinned!';
+    }
+    setTimeout(() => {
+      updatePinButton();
+    }, 1600);
+  };
   document.getElementById('modal-chat-btn').onclick = () => {
     modal.classList.add('hidden');
     document.getElementById('user-input').value = `Tell me about ${place.name} and how it can help me`;
