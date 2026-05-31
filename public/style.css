@@ -22,6 +22,45 @@ body {
   overflow: hidden;
 }
 
+body[data-theme="light"] {
+  --blue: #1a73e8;
+  --blue-dark: #1558b0;
+  --bg: #f0f4f8;
+  --white: #ffffff;
+  --border: #e0e0e0;
+  --text: #202124;
+  --text-muted: #5f6368;
+}
+
+body[data-theme="dark"] {
+  --blue: #4f9eff;
+  --blue-dark: #82b4ff;
+  --bg: #1a1a2e;
+  --white: #242438;
+  --border: #3a3a5c;
+  --text: #e8eaf6;
+  --text-muted: #9fa8c7;
+}
+
+body[data-text-size="small"] { font-size: 13px; }
+body[data-text-size="medium"] { font-size: 14px; }
+body[data-text-size="large"] { font-size: 16px; }
+
+body[data-text-size="small"] .message,
+body[data-text-size="small"] .place-name,
+body[data-text-size="small"] .bottom-label,
+body[data-text-size="small"] .sidebar-section-label { font-size: 11px; }
+
+body[data-text-size="medium"] .message,
+body[data-text-size="medium"] .place-name,
+body[data-text-size="medium"] .bottom-label,
+body[data-text-size="medium"] .sidebar-section-label { font-size: 12px; }
+
+body[data-text-size="large"] .message,
+body[data-text-size="large"] .place-name,
+body[data-text-size="large"] .bottom-label,
+body[data-text-size="large"] .sidebar-section-label { font-size: 14px; }
+
 /* DARK MODE */
 @media (prefers-color-scheme: dark) {
   :root {
@@ -184,6 +223,10 @@ body {
 
 .header-right { display: flex; gap: 8px; }
 
+.settings-menu-wrap {
+  position: relative;
+}
+
 .btn-secondary {
   padding: 6px 12px;
   border-radius: 8px;
@@ -195,6 +238,59 @@ body {
   transition: background 0.2s;
 }
 .btn-secondary:hover { background: var(--bg); }
+
+.settings-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 230px;
+  padding: 8px;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+}
+
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 6px;
+  color: var(--text);
+  font-size: 12px;
+}
+
+.settings-row label {
+  font-weight: 600;
+}
+
+.settings-row select {
+  min-width: 92px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 12px;
+}
+
+.settings-action {
+  width: 100%;
+  padding: 8px 6px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.settings-action:hover {
+  background: var(--bg);
+}
 
 /* MAIN LAYOUT */
 .main-layout {

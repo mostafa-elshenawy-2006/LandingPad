@@ -62,7 +62,29 @@
       <div class="header-right">
         <button id="lang-btn" class="btn-secondary">🌐 EN ▾</button>
         <button id="new-session-btn" class="btn-secondary">+ New</button>
-        <button id="settings-btn" class="btn-secondary">⚙</button>
+        <div class="settings-menu-wrap">
+          <button id="settings-btn" class="btn-secondary" aria-haspopup="true" aria-expanded="false">⚙</button>
+          <div id="settings-menu" class="settings-menu hidden" role="menu">
+            <div class="settings-row">
+              <label for="text-size-setting">Text Size</label>
+              <select id="text-size-setting">
+                <option value="small">Small</option>
+                <option value="medium" selected>Medium</option>
+                <option value="large">Large</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="theme-setting">Theme</label>
+              <select id="theme-setting">
+                <option value="dark">Dark</option>
+                <option value="light">Light</option>
+              </select>
+            </div>
+            <button id="settings-language-btn" class="settings-action" type="button">Language</button>
+            <button id="settings-clear-chat-btn" class="settings-action" type="button">Clear Chat History</button>
+            <button id="settings-about-btn" class="settings-action" type="button">About LandingPad</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -72,13 +94,13 @@
       <!-- COL 1: SIDEBAR -->
       <div class="sidebar">
         <div class="sidebar-search">
-          <input type="text" placeholder="Search places..." id="sidebar-search" />
+          <input type="text" placeholder="Search places..." id="sidebar-search" data-i18n-placeholder="searchPlaces" />
         </div>
-        <div class="sidebar-section-label">PINNED</div>
+        <div class="sidebar-section-label" data-i18n="pinned">PINNED</div>
         <div id="pinned-list" class="place-list"></div>
-        <div class="sidebar-section-label">AI RECOMMENDED</div>
+        <div class="sidebar-section-label" data-i18n="aiRecommended">AI RECOMMENDED</div>
         <div id="recommended-list" class="place-list"></div>
-        <div class="sidebar-section-label">RECENTS</div>
+        <div class="sidebar-section-label" data-i18n="recents">RECENTS</div>
         <div id="recents-list" class="place-list"></div>
       </div>
 
@@ -98,13 +120,13 @@
 
       <!-- COL 3: AI CHAT -->
       <div class="chat-col">
-        <div class="chat-header">AI Guide</div>
+        <div class="chat-header" data-i18n="aiGuide">AI Guide</div>
         <div id="chat-messages" class="chat-messages"></div>
         <div class="quick-actions">
-          <span class="quick-btn" data-msg="How do I find a doctor near me?">Find a doctor</span>
-          <span class="quick-btn" data-msg="How do I enroll my kids in school?">Enroll kids</span>
-          <span class="quick-btn" data-msg="I need legal help with my immigration status">Legal help</span>
-          <span class="quick-btn" data-msg="Where can I find food assistance near me?">Food help</span>
+          <span class="quick-btn" data-i18n="findDoctor" data-msg-key="findDoctor" data-msg="How do I find a doctor near me?">Find a doctor</span>
+          <span class="quick-btn" data-i18n="enrollKids" data-msg-key="enrollKids" data-msg="How do I enroll my kids in school?">Enroll kids</span>
+          <span class="quick-btn" data-i18n="legalHelp" data-msg-key="legalHelp" data-msg="I need legal help with my immigration status">Legal help</span>
+          <span class="quick-btn" data-i18n="foodHelp" data-msg-key="foodHelp" data-msg="Where can I find food assistance near me?">Food help</span>
         </div>
         <div class="chat-input-row">
           <input type="text" id="user-input" placeholder="Type in any language..." />
@@ -118,16 +140,16 @@
     <div class="bottom-bar">
       <!-- PLANNER -->
       <div class="bottom-planner">
-        <div class="bottom-label">📅 Planner</div>
+        <div class="bottom-label">📅 <span data-i18n="planner">Planner</span></div>
         <div id="planner-events" class="planner-events"></div>
-        <button id="add-event-btn" class="btn-secondary" style="font-size:12px; margin-top:6px;">+ Add appointment</button>
+        <button id="add-event-btn" class="btn-secondary" style="font-size:12px; margin-top:6px;">+ <span data-i18n="addAppointment">Add appointment</span></button>
       </div>
       <!-- EMAIL COMPOSER -->
       <div class="bottom-email">
-        <div class="bottom-label">✉️ Write email in your language</div>
+        <div class="bottom-label">✉️ <span data-i18n="email">Write email in your language</span></div>
         <div class="email-input-row">
           <input type="text" id="email-prompt" placeholder='e.g. "Email my landlord about repairs in Spanish"' />
-          <button id="draft-email-btn">Draft →</button>
+          <button id="draft-email-btn"><span data-i18n="draft">Draft</span> →</button>
         </div>
        <div id="email-draft" class="email-draft hidden"></div>
     <button id="copy-email-btn" class="btn-secondary hidden" style="font-size:11px; margin-top:4px;">📋 Copy email</button>
