@@ -514,9 +514,35 @@ body[data-text-size="large"] .sidebar-section-label { font-size: 14px; }
   padding: 5px 8px;
   font-size: 11px;
   color: var(--text);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
 }
 
 .planner-event span { color: var(--text-muted); }
+
+.planner-event-text {
+  min-width: 0;
+}
+
+.planner-calendar-btn {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--white);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.planner-calendar-btn:hover {
+  background: var(--bg);
+  border-color: var(--blue);
+}
 
 .email-input-row {
   display: flex;

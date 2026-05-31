@@ -660,13 +660,83 @@ document.getElementById('add-event-btn').addEventListener('click', () => {
   if (title && date) { plannerEvents.push({ title, date }); renderPlanner(); }
 });
 
+function parsePlannerDate(dateText) {
+  const now = new Date();
+  const months = {
+    jan: 0, january: 0,
+    feb: 1, february: 1,
+    mar: 2, march: 2,
+    apr: 3, april: 3,
+    may: 4,
+    jun: 5, june: 5,
+    jul: 6, july: 6,
+    aug: 7, august: 7,
+    sep: 8, sept: 8, september: 8,
+    oct: 9, october: 9,
+    nov: 10, november: 10,
+    dec: 11, december: 11
+  };
+  const match = dateText.match(/\b([a-z]+)\s+(\d{1,2})(?:,?\s+(\d{4}))?(?:,?\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?)?/i);
+  let start;
+
+  if (match && months[match[1].toLowerCase()] !== undefined) {
+    const year = match[3] ? Number(match[3]) : now.getFullYear();
+    let hour = match[4] ? Number(match[4]) : 9;
+    const minute = match[5] ? Number(match[5]) : 0;
+    const meridiem = match[6] ? match[6].toLowerCase() : '';
+
+    if (meridiem === 'am' && hour === 12) hour = 0;
+    if (meridiem === 'pm' && hour < 12) hour += 12;
+
+    start = new Date(year, months[match[1].toLowerCase()], Number(match[2]), hour, minute, 0);
+  } else {
+    const parsed = Date.parse(dateText);
+    start = Number.isNaN(parsed) ? new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0) : new Date(parsed);
+  }
+
+  if (start < now && !(match && match[3])) {
+    start.setFullYear(start.getFullYear() + 1);
+  }
+
+  const end = new Date(start.getTime() + 60 * 60 * 1000);
+  return { start, end };
+}
+
+function formatCalendarDate(date) {
+  const pad = value => String(value).padStart(2, '0');
+  return `${date.getFullYear()}${pad(date.getMonth() + 1)}${pad(date.getDate())}T${pad(date.getHours())}${pad(date.getMinutes())}00`;
+}
+
+function openGoogleCalendarEvent(event) {
+  const { start, end } = parsePlannerDate(event.date);
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: event.title,
+    dates: `${formatCalendarDate(start)}/${formatCalendarDate(end)}`,
+    details: 'Added from LandingPad'
+  });
+  window.open(`https://calendar.google.com/calendar/render?${params.toString()}`, '_blank', 'noopener');
+}
+
 function renderPlanner() {
   const container = document.getElementById('planner-events');
   container.innerHTML = '';
   plannerEvents.slice(0, 3).forEach(event => {
     const div = document.createElement('div');
     div.className = 'planner-event';
-    div.innerHTML = `<span>${event.date}</span> — ${event.title}`;
+    const text = document.createElement('div');
+    text.className = 'planner-event-text';
+    text.innerHTML = `<span>${escapeHTML(event.date)}</span> — ${escapeHTML(event.title)}`;
+
+    const calendarBtn = document.createElement('button');
+    calendarBtn.className = 'planner-calendar-btn';
+    calendarBtn.type = 'button';
+    calendarBtn.title = 'Save to Google Calendar';
+    calendarBtn.textContent = '📅';
+    calendarBtn.addEventListener('click', () => openGoogleCalendarEvent(event));
+
+    div.appendChild(text);
+    div.appendChild(calendarBtn);
     container.appendChild(div);
   });
 }
