@@ -29,15 +29,31 @@ function encodeEmailHeader(value = '') {
   return String(value).replace(/[\r\n]/g, ' ').trim();
 }
 
-function createRawEmail({ to, subject, body }) {
+function encodeSubject(value = '') {
+  const subject = encodeEmailHeader(value);
+  return /^[\x00-\x7F]*$/.test(subject)
+    ? subject
+    : `=?UTF-8?B?${Buffer.from(subject, 'utf8').toString('base64')}?=`;
+}
+
+function getGoogleErrorMessage(error) {
+  return error.response?.data?.error_description
+    || error.response?.data?.error
+    || error.errors?.[0]?.message
+    || error.message
+    || 'Failed to send email';
+}
+
+function createRawEmail({ from, to, subject, body }) {
   const message = [
+    from ? `From: ${encodeEmailHeader(from)}` : null,
     `To: ${encodeEmailHeader(to)}`,
-    `Subject: ${encodeEmailHeader(subject)}`,
+    `Subject: ${encodeSubject(subject)}`,
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset="UTF-8"',
     '',
     body || ''
-  ].join('\r\n');
+  ].filter(Boolean).join('\r\n');
 
   return Buffer.from(message)
     .toString('base64')
@@ -138,17 +154,19 @@ app.post('/send-email', async (req, res) => {
   try {
     const oauth2Client = getOAuthClient();
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const profile = await gmail.users.getProfile({ userId: 'me' });
     const result = await gmail.users.messages.send({
       userId: 'me',
       requestBody: {
-        raw: createRawEmail({ to, subject, body })
+        raw: createRawEmail({ from: profile.data.emailAddress, to, subject, body })
       }
     });
     gmailTokens = { ...gmailTokens, ...oauth2Client.credentials };
     res.json({ ok: true, id: result.data.id });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to send email' });
+    const message = getGoogleErrorMessage(error);
+    console.error('Failed to send Gmail message:', message, error.response?.data || error.errors || error);
+    res.status(error.code || error.response?.status || 500).json({ error: message });
   }
 });
 

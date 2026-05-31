@@ -827,10 +827,12 @@ document.getElementById('gmail-action-btn').addEventListener('click', async () =
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ to, subject, body })
     });
-    if (!res.ok) throw new Error('Send failed');
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || 'Send failed');
     gmailBtn.textContent = '✅ Sent!';
     setTimeout(updateGmailUI, 2000);
-  } catch {
+  } catch (error) {
+    alert(`Could not send email: ${error.message}`);
     gmailBtn.textContent = 'Could not send';
     setTimeout(updateGmailUI, 2000);
   }
