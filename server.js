@@ -48,16 +48,15 @@ function getGoogleErrorMessage(error) {
   return JSON.stringify(value);
 }
 
-function createRawEmail({ from, to, subject, body }) {
+function createRawEmail({ to, subject, body }) {
   const message = [
-    from ? `From: ${encodeEmailHeader(from)}` : null,
     `To: ${encodeEmailHeader(to)}`,
     `Subject: ${encodeSubject(subject)}`,
     'MIME-Version: 1.0',
     'Content-Type: text/plain; charset="UTF-8"',
     '',
     body || ''
-  ].filter(Boolean).join('\r\n');
+  ].join('\r\n');
 
   return Buffer.from(message)
     .toString('base64')
@@ -158,11 +157,10 @@ app.post('/send-email', async (req, res) => {
   try {
     const oauth2Client = getOAuthClient();
     const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
-    const profile = await gmail.users.getProfile({ userId: 'me' });
     const result = await gmail.users.messages.send({
       userId: 'me',
       requestBody: {
-        raw: createRawEmail({ from: profile.data.emailAddress, to, subject, body })
+        raw: createRawEmail({ to, subject, body })
       }
     });
     gmailTokens = { ...gmailTokens, ...oauth2Client.credentials };
